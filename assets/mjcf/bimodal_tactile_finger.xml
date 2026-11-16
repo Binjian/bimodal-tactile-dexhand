@@ -1,0 +1,58 @@
+<mujoco model="bimodal_tactile_finger">
+  <compiler angle="degree" coordinate="local" inertiafromgeom="true"/>
+  <option timestep="0.001" cone="elliptic" impratio="10" integrator="implicitfast"/>
+
+  <asset>
+    <texture name="grid_tex" type="2d" builtin="checker" rgb1="0.15 0.18 0.22" rgb2="0.22 0.26 0.32" width="256" height="256"/>
+    <material name="floor_mat" texture="grid_tex" texrepeat="8 8"/>
+    <material name="gel_mat" rgba="0.2 0.65 0.85 0.45"/>
+    <material name="bone_mat" rgba="0.35 0.38 0.42 1.0"/>
+    <material name="obj_mat" rgba="0.85 0.45 0.20 1.0"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
+    <geom name="floor" type="plane" size="0.5 0.5 0.01" material="floor_mat"/>
+
+    <!-- Target grasped object with fine surface ridge -->
+    <body name="target_object" pos="0 0 0.045">
+      <freejoint name="obj_freejoint"/>
+      <geom name="obj_body" type="box" size="0.025 0.025 0.025" mass="0.12" material="obj_mat"
+            condim="6" friction="0.65 0.005 0.0005"/>
+      <geom name="obj_ridge" type="capsule" fromto="-0.015 0 0.025 0.015 0 0.025" size="0.0025"
+            material="obj_mat" condim="6"/>
+    </body>
+
+    <!-- Distal Phalanx with Heterogeneous Tactile Stack -->
+    <body name="distal_phalanx" pos="0 0 0.095">
+      <joint name="finger_z" type="slide" axis="0 0 1" damping="5.0"/>
+      <joint name="finger_x" type="slide" axis="1 0 0" damping="5.0"/>
+      <geom name="phalanx_bone" type="box" size="0.012 0.010 0.008" material="bone_mat"/>
+
+      <!-- Series Base: 6D Hall F/T Sensor Anchor underneath VBT Chamber -->
+      <site name="hall_base_site" pos="0 0 -0.008" size="0.002" rgba="1 0 0 1"/>
+
+      <!-- Front-End: Vision-Based Tactile (VBT) Optical Chamber & Elastomer Gel -->
+      <body name="vbt_tip_body" pos="0 0 -0.016">
+        <!-- group="3" is masked out from the internal orthographic depth camera -->
+        <geom name="gel_pad_collision" type="box" size="0.011 0.009 0.006"
+              group="3" condim="6" solref="0.008 1.2" solimp="0.85 0.95 0.002"
+              material="gel_mat"/>
+        <!-- Internal Orthographic Depth Camera: znear=lens plane, zfar=undeformed gel outer surface -->
+        <camera name="vbt_depth_cam" pos="0 0 0.004" euler="0 0 0"
+                mode="fixed" orthographic="true" fovy="0.020" znear="0.002" zfar="0.010"/>
+      </body>
+
+      <!-- Distributed 6D Hall Array Sites (ITPU Taxel Grid on Fingerpad Side) -->
+      <site name="hall_taxel_01" pos="0.006  0.004 -0.012" size="0.0012" rgba="0 1 0 1"/>
+      <site name="hall_taxel_02" pos="0.006 -0.004 -0.012" size="0.0012" rgba="0 1 0 1"/>
+      <site name="hall_taxel_03" pos="-0.006 0.004 -0.012" size="0.0012" rgba="0 1 0 1"/>
+      <site name="hall_taxel_04" pos="-0.006 -0.004 -0.012" size="0.0012" rgba="0 1 0 1"/>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <force name="tip_hall_force" site="hall_base_site"/>
+    <torque name="tip_hall_torque" site="hall_base_site"/>
+  </sensor>
+</mujoco>
